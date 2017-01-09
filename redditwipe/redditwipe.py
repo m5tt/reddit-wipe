@@ -1,84 +1,78 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+import argparse
+import itertools
+import socket
 
 import praw
 
-ITEMTYPE_POSTS = "posts"
-ITEMTYPE_COMMENTS = "comments"
-REDDIT_ACCESS_NUM = 999999999
+CLIENT_ID = 'Et5pP8DWesue1w'
+CLIENT_SECRET = '9pLeMTBl7rNdykNCD_Fa3YD7sOI'
 
+CONTENT_TYPE_COMMENT = 'comments'
+CONTENT_TYPE_SUBMISSION = 'submissions'
+
+TEST_URL = 'www.google.com'
 USER_AGENT = 'reddit-wipe'
 
 
-def delete_comments(reddit_user, limit_num):
-    comments_deleted = 0
+def delete_content(content, replace_str='', match_item=None):
+    for item in content:
+        if match_item:
+            delete_item = match_item(item)
+        else:
+            delete_item = True
 
-    for access_num in range(0, REDDIT_ACCESS_NUM):
-        
-        comments = reddit_user.get_comments(limit=None)
-
-        if not any(True for _ in comments):
-            print("No comments")
-            break
-        
-        for current_comment in comments:
-            current_comment.edit("Deleted")
-            current_comment.delete()
-
-            comments_deleted += 1
-            print("Comment deleted")
-
-            if comments_deleted == limit_num:
-                return
+        if delete_item:
+            item.edit(replace_str)
+            item.delete()
 
 
-def delete_posts(reddit_user, limit_num):
+def get_content(user, exclude):
+    if exclude == CONTENT_TYPE_COMMENT:
+        content = user.submissions.new(limit=None)
+    elif exclude == CONTENT_TYPE_SUBMISSION:
+        content = user.comments.new(limit=None)
+    else:
+        content = itertools.chain(user.comments.new(limit=None),
+                                  user.submissions.new(limit=None))
 
-    posts_deleted = 0
-
-    for access_num in range(0, REDDIT_ACCESS_NUM):
-
-        posts = reddit_user.get_submitted(limit=None)
-
-        if not any(True for _ in posts):
-            print("No more posts")
-            break
-
-        for current_post in posts:
-            if current_post.selftext:
-                current_post.edit("Deleted")
-
-            current_post.delete()
-            posts_deleted += 1
-            print("Post deleted")
-
-            if posts_deleted == limit_num:
-                return
+    return content
 
 
 def login():
     username = input("Username: ")
     password = input("Password: ")
-    
-    reddit = praw.Reddit(USER_AGENT)
-    reddit.login(username, password, disable_warning=True)
-    reddit_user = reddit.get_redditor(username)
 
-    return reddit_user
+    reddit = praw.Reddit(client_id=CLIENT_ID,
+                         client_secret=CLIENT_SECRET,
+                         user_agent=USER_AGENT,
+                         username=username,
+                         password=password)
 
-
-reddit_user = login()
-print("Logged in\n")
-
-item_type = input("Delete posts or comments: ")
-limit = input("Limit (leave blank for no limit): ")
-limit = int(limit)
+    return reddit
 
 
-if not limit:
-    limit = -1
+def is_connected():
+    try:
+        host = socket.gethostbyname(TEST_URL)
+        socket.create_connection((host, 80), 4)
+        return True
+    except socket.error:
+        return False
 
-if item_type == ITEMTYPE_COMMENTS:
-    delete_comments(reddit_user, limit)
-elif item_type == ITEMTYPE_POSTS:
-    delete_posts(reddit_user, limit)
+def main():
+    if is_connected():
+        user = login().user.me()
+        print("Logged in\n")
+
+        content = get_content(user, '')
+        delete_content(content)
+    else:
+        pass
+
+
+if __name__ == '__main__':
+    main()
+
 
