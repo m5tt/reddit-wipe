@@ -4,13 +4,11 @@ import re
 import time
 import socket
 import signal
+import getpass
 import argparse
 import itertools
 
 import praw
-
-CLIENT_ID = 'Et5pP8DWesue1w'
-CLIENT_SECRET = '9pLeMTBl7rNdykNCD_Fa3YD7sOI'
 
 TEST_URL = 'www.google.com'
 USER_AGENT = 'reddit-wipe'
@@ -32,7 +30,7 @@ def ctrl_c_exit(signum, frame):
     exit(0)
 
 
-def delete_content(user, exclude, item_matcher, replace_str)
+def delete_content(user, exclude, item_matcher, replace_str):
     content = get_content(user, exclude)
 
     while len(list(content)):
@@ -67,10 +65,12 @@ def get_item_matcher(keyword, pattern):
 
 def login():
     username = input("Username: ")
-    password = input("Password: ")
+    password = getpass.getpass("Password: ")
+    client_id = input("Client id: ")
+    client_secret = input("Client secret: ")
 
-    return praw.Reddit(client_id=CLIENT_ID,
-                       client_secret=CLIENT_SECRET,
+    return praw.Reddit(client_id=client_id,
+                       client_secret=client_secret,
                        user_agent=USER_AGENT,
                        username=username,
                        password=password)
