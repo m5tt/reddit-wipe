@@ -3,7 +3,7 @@ reddit-wipe is a command line reddit history scrubber.
 
 ## Features
 * Properly deletes comments by editing first and then deleting
-* delete user content matching a keyword or a regex pattern
+* Delete user content matching a keyword or a regex pattern
 * Configurable
 
 ## Examples
