@@ -8,9 +8,9 @@ reddit-wipe is a command line reddit history scrubber.
 
 ## Examples
 
-Only delete comments and replace the body with a custom string
+Only delete comments that contain the keyword `keyword`
 
-`reddit-wipe --exclude=submissions --replace-str='custom edit string'`
+`reddit-wipe --exclude=submissions --keyword=keyword`
 
 ## Usage
 Firstly to install, just clone and run `pip install .`
