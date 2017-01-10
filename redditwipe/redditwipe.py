@@ -32,15 +32,14 @@ def ctrl_c_exit(signum, frame):
     exit(0)
 
 
-def delete_content(user, exclude, item_matcher, replace_str, no_delete):
+def delete_content(user, exclude, item_matcher, replace_str)
     content = get_content(user, exclude)
 
     while len(list(content)):
         for item in content:
             if item_matcher(item):
                 item.edit(replace_str)
-                if not no_delete:
-                    item.delete()
+                item.delete()
         time.sleep(COOLDOWN_TIME)
         content = get_content(user, exclude)
 
@@ -114,7 +113,7 @@ def main():
             print('Error: failed to login')
         else:
             item_matcher = get_item_matcher(args.keyword, args.pattern)
-            delete_content(user, args.exclude, item_matcher, args.replace_str, args.no_delete)
+            delete_content(user, args.exclude, item_matcher, args.replace_str)
 
             print('All done')
     else:
