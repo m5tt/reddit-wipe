@@ -9,6 +9,7 @@ reddit-wipe is a command line reddit history scrubber.
 ## Examples
 
 Only delete comments and replace the body with a custom string
+
 `reddit-wipe --exclude=submissions --replace-str='custom edit string'`
 
 ## Usage
