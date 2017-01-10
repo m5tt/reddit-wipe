@@ -1,31 +1,39 @@
 #!/usr/bin/env python
 
+import re
+import socket
+import signal
 import argparse
 import itertools
-import socket
 
 import praw
 
 CLIENT_ID = 'Et5pP8DWesue1w'
 CLIENT_SECRET = '9pLeMTBl7rNdykNCD_Fa3YD7sOI'
 
-CONTENT_TYPE_COMMENT = 'comments'
-CONTENT_TYPE_SUBMISSION = 'submissions'
-
 TEST_URL = 'www.google.com'
 USER_AGENT = 'reddit-wipe'
 
+CONTENT_TYPE_COMMENT = 'comments'
+CONTENT_TYPE_SUBMISSION = 'submissions'
 
-def delete_content(content, replace_str='', match_item=None):
+
+def ctrl_c_exit(signum, frame):
+    """
+    always bothers me when ctrl c raises a bunch of exceptions for no reason
+    so exit cleanly
+    """
+
+    print()
+    exit(0)
+
+
+def delete_content(content, item_matcher, replace_str, no_delete):
     for item in content:
-        if match_item:
-            delete_item = match_item(item)
-        else:
-            delete_item = True
-
-        if delete_item:
+        if item_matcher(item):
             item.edit(replace_str)
-            item.delete()
+            if not no_delete:
+                item.delete()
 
 
 def get_content(user, exclude):
@@ -40,17 +48,24 @@ def get_content(user, exclude):
     return content
 
 
+def get_item_matcher(keyword, pattern):
+    if (not keyword) and (not pattern):
+        return lambda item: True
+    elif keyword:
+        return lambda item: item == keyword
+    else:
+        return lambda item: re.search(pattern, item)
+
+
 def login():
     username = input("Username: ")
     password = input("Password: ")
 
-    reddit = praw.Reddit(client_id=CLIENT_ID,
-                         client_secret=CLIENT_SECRET,
-                         user_agent=USER_AGENT,
-                         username=username,
-                         password=password)
-
-    return reddit
+    return praw.Reddit(client_id=CLIENT_ID,
+                       client_secret=CLIENT_SECRET,
+                       user_agent=USER_AGENT,
+                       username=username,
+                       password=password)
 
 
 def is_connected():
@@ -61,16 +76,44 @@ def is_connected():
     except socket.error:
         return False
 
+
+def get_args():
+    arg_parser = argparse.ArgumentParser(description='A commandline reddit content deleter')
+
+    arg_parser.add_argument('--exclude', choices=[CONTENT_TYPE_COMMENT, CONTENT_TYPE_SUBMISSION],
+                            default='', required=False, type=str, help='exclude either comments or submissions')
+    arg_parser.add_argument('--replace-str', default='', required=False, type=str,
+                            help='What to replace the comment body with before deleting')
+    arg_parser.add_argument('--no-delete', action='store_true', required=False,
+                            help='only replace comment/submission bodies with a string')
+    match_group = arg_parser.add_mutually_exclusive_group()
+    match_group.add_argument('--keyword', default='', required=False, type=str,
+                             help='Delete only comments containing a keyword')
+    match_group.add_argument('--pattern', default='', required=False, type=str,
+                             help='Delete only comments that match a regex pattern')
+
+    return arg_parser.parse_args()
+
+
 def main():
+    signal.signal(signal.SIGINT, ctrl_c_exit)
+    args = get_args()
+
     if is_connected():
-        user = login().user.me()
-        print("Logged in\n")
+        try:
+            user = login().user.me()
+            print("Logged in\n")
+        except:                             # praw's exceptions are all wacked out so just do this
+            print('Error: failed to login')
+        else:
+            content = get_content(user, args.exclude)
 
-        content = get_content(user, '')
-        delete_content(content)
+            item_matcher = get_item_matcher(args.keyword, args.pattern)
+            delete_content(content, item_matcher, args.replace_str, args.no_delete)
+
+            print('All done')
     else:
-        pass
-
+        print('No internet connection')
 
 if __name__ == '__main__':
     main()
